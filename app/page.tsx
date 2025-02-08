@@ -27,12 +27,11 @@ export default function Home() {
   const [progressSteps, setProgressSteps] = useState<string[]>([]);
 
   const router = useRouter();
+  // Authentication check
   const url = getAppEndpointKey();
   const applicationId = getStorageApplicationId();
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
-
-  // Authentication check
   useEffect(() => {
     if (!url || !applicationId || !accessToken || !refreshToken) {
       router.push('/auth')
@@ -60,7 +59,7 @@ export default function Home() {
     <div className="min-h-screen relative overflow-hidden">
       <NetworkBackground />
       <div className="relative z-10">
-        <Header onAboutClick={() => setShowAbout(true)} />
+        <Header onAboutClick={() => setShowAbout(true)} onLogout={logout} />
 
         <main className="container mx-auto px-4 py-8 max-w-2xl">
           <div className="bg-[#111111]/80 backdrop-blur-md rounded-2xl p-6 shadow-xl">
