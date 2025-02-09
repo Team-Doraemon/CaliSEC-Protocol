@@ -9,7 +9,7 @@ import { getRandomSuggestion } from "@/lib/utils"
 
 interface DepositProps {
   onDeposit: (steps: string[]) => void
-  onInputDeposit: (message: string) => Promise<void>; // ✅ Uses handleInputDeposit
+  onInputDeposit: (message: string) => Promise<string | null>; // ✅ Uses handleInputDeposit
   onComplete: () => void
 }
 
@@ -28,8 +28,10 @@ export default function Deposit({ onDeposit, onInputDeposit, onComplete }: Depos
     ])
 
     try {
-      await onInputDeposit(secret); // ✅ Use actual deposit function
-      setGeneratedProof(secret); // ✅ Set generated proof from message
+      const proof = await onInputDeposit(secret); // ✅ Get actual proof
+      if (proof) {
+        setGeneratedProof(proof); // ✅ Set the actual proof
+      }
       onComplete()
     } catch (error) {
       console.error("Deposit error:", error);

@@ -8,7 +8,7 @@ import AboutModal from "@/components/about-modal";
 import ProgressAnimation from "@/components/progress-animation";
 import NetworkBackground from "@/components/network-background";
 import Footer from "@/components/footer/Footer";
-import { createActor } from "@/declarations/CaliSec_backend";
+import { createActor, CreateActorOptions } from "@/declarations/CaliSec_backend";
 
 import { useRouter } from "next/navigation";
 import {
@@ -37,7 +37,13 @@ import {
 import { ContextApiDataSource } from "../api/dataSource/ContractApiDataSource";
 import { ContextVariables, ContractProposal } from "../api/contractApi";
 
-const CaliSec_backend = createActor("by6od-j4aaa-aaaaa-qaadq-cai");
+
+const options : CreateActorOptions = {
+  agentOptions: {
+    host: "http://localhost:4943",
+  }
+}
+const CaliSec_backend = createActor("bkyz2-fmaaa-aaaaa-qaaaq-cai" , options);
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("deposit");
@@ -131,21 +137,23 @@ export default function Home() {
   //   }
   // }
 
-  const handleInputDeposit = async (message: string) => {
+  const handleInputDeposit = async (message: string): Promise<string | null> => {
     try {
       const result = await CaliSec_backend.deposit_message(message);
-      console.log("YEH LO JI: ",result);
-
-      if ("Ok" in result) { // ✅ Type guard check
+      console.log("YEH LO JI: ", result);
+  
+      if ("Ok" in result) { // ✅ Check if the response is successful
         console.log("Deposit successful:", result.Ok);
-        window.alert(`Deposit successful: ${result.Ok}`);
+       
+        return result.Ok; // ✅ Return the generated proof
       } else if ("Err" in result) {
         console.error("Deposit error:", result.Err);
-        window.alert(`Deposit failed: ${result.Err}`);
+        return null; // Return null in case of an error
       }
     } catch (error) {
       console.error("Unexpected error:", error);
       window.alert("An unexpected error occurred during deposit.");
+      return null;
     }
   };
   
@@ -157,14 +165,19 @@ export default function Home() {
       
       if ("Ok" in result) { // ✅ Type guard check
         console.log("Withdraw successful:", result.Ok);
-        window.alert(`Withdraw successful: ${result.Ok}`);
+
+        return result.Ok; // ✅ Return the decoded message
       } else if ("Err" in result) {
         console.error("Withdraw error:", result.Err);
         window.alert(`Withdraw failed: ${result.Err}`);
+
+        return null; // ✅ Return null in case of an error
       }
     } catch (error) {
       console.error("Unexpected error:", error);
       window.alert("An unexpected error occurred during withdrawal.");
+
+      return null; // ✅ Return null in case of an error
     }
   };
   

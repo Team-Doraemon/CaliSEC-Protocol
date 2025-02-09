@@ -14,7 +14,7 @@ interface WithdrawProps {
 }
 
 export default function Withdraw({ onWithdraw, onInputWithdraw, onComplete }: WithdrawProps) {
-  const [proof, setProof] = useState("")
+  const [proof, setProof] = useState()
   const [decodedMessage, setDecodedMessage] = useState("")
   const [copied, setCopied] = useState(false)
   const [suggestion] = useState(getRandomSuggestion)
@@ -28,8 +28,8 @@ export default function Withdraw({ onWithdraw, onInputWithdraw, onComplete }: Wi
     ])
 
     try {
-      await onInputWithdraw(proof); // ✅ Use actual withdraw function
-      setDecodedMessage(proof); // ✅ Set decoded message from proof
+      const thing = await onInputWithdraw(proof); // ✅ Use actual withdraw function
+      setDecodedMessage(thing); // ✅ Set decoded message from proof
       onComplete()
     } catch (error) {
       console.error("Withdraw error:", error);
