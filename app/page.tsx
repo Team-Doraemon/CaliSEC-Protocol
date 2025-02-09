@@ -81,7 +81,7 @@ export default function Home() {
     const request : CreateProposalRequest = {
       action_type: ProposalActionType.ExternalFunctionCall,
       params: {
-        receiver_id: '',
+        receiver_id: 'by6od-j4aaa-aaaaa-qaadq-cai',
         method_name: 'deposit_message',
         args: JSON.stringify({
           message : 'Hello World'
@@ -114,7 +114,7 @@ export default function Home() {
     const request : CreateProposalRequest = {
       action_type: ProposalActionType.ExternalFunctionCall,
       params: {
-        receiver_id: '',
+        receiver_id: 'by6od-j4aaa-aaaaa-qaadq-cai',
         method_name: 'withdraw_message',
         args: JSON.stringify({
           note : 'Hello World'
