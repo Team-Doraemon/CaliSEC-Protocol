@@ -1,0 +1,18 @@
+type Stats = record {
+    total_deposits : nat64;
+    total_withdrawals : nat64;
+    unique_users : nat64;
+};
+
+service : {
+    // Update methods
+    "deposit_message" : (text) -> (variant { Ok : text; Err : text });
+    "withdraw_message" : (text) -> (variant { Ok : text; Err : text });
+
+    // Query methods
+    "get_message_count" : () -> (nat64) query;
+    "get_stats" : () -> (Stats) query;
+    "verify_message_ownership" : (text) -> (variant { Ok : bool; Err : text }) query;
+
+  
+}
