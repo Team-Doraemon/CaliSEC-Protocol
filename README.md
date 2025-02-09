@@ -2,6 +2,7 @@
 
 ## **Overview**
 CaliSEC (Calimero Secure Environment for Communication) is a decentralized, privacy-focused protocol designed for **secret sharing and confidential communications**. It leverages:
+![Untitled-2025-01-26-2338](https://github.com/user-attachments/assets/d81dfc63-1d82-4454-8f85-1bbafac52a18)
 
 - **Calimero** as a private compute network for secure communications.
 - **ICP Canisters** for data availability, tokenization, and proof verification.
