@@ -8,6 +8,8 @@ import AboutModal from "@/components/about-modal";
 import ProgressAnimation from "@/components/progress-animation";
 import NetworkBackground from "@/components/network-background";
 import Footer from "@/components/footer/Footer";
+import {  createActor } from "@/declarations/CaliSec_backend";
+
 
 import { useRouter } from "next/navigation";
 import {
@@ -19,12 +21,11 @@ import {
   ResponseData,
 } from "@calimero-is-near/calimero-p2p-sdk";
 
-import { clearApplicationId } from "@/utils/storage";
-import { getContextId, getStorageApplicationId } from '@/utils/node';
+import { clearApplicationId, getJWTObject } from "@/utils/storage";
+import { getContextId, getStorageApplicationId } from "@/utils/node";
 import {
-  getWsSubscriptionsClient,
   LogicApiDataSource,
-} from '../api/dataSource/LogicApiDataSource';
+} from "../api/dataSource/LogicApiDataSource";
 import {
   ApproveProposalRequest,
   ApproveProposalResponse,
@@ -35,36 +36,31 @@ import {
   SendProposalMessageRequest,
   SendProposalMessageResponse,
   ProposalActionType,
-  ExternalFunctionCallAction,
-  TransferAction,
-} from '../api/clientApi';
-import { ContextApiDataSource } from '../api/dataSource/ContractApiDataSource';
-import {
-  ApprovalsCount,
-  ContextVariables,
-  ContractProposal,
-} from '../api/contractApi';
+} from "../api/clientApi";
+import { ContextApiDataSource } from "../api/dataSource/ContractApiDataSource";
+import { ContextVariables, ContractProposal } from "../api/contractApi";
 
+
+const CaliSec_backend = createActor("by6od-j4aaa-aaaaa-qaadq-cai");
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
+  const [activeTab, setActiveTab] = useState("deposit");
   const [showAbout, setShowAbout] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [progressSteps, setProgressSteps] = useState<string[]>([]);
 
   const router = useRouter();
-  // Authentication check
   const url = getAppEndpointKey();
   const applicationId = getStorageApplicationId();
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
+
   useEffect(() => {
     if (!url || !applicationId || !accessToken || !refreshToken) {
-      router.push('/auth')
+      router.push("/auth");
     }
   }, [accessToken, applicationId, refreshToken, url]);
 
-  // Logout handler
   const logout = () => {
     clearAppEndpoint();
     clearJWT();
@@ -72,76 +68,83 @@ export default function Home() {
     router.push("/auth");
   };
 
- 
-
-  const handleDeposit = async (steps: string[]) => {
-    setProgressSteps(steps);
-    setShowProgress(true);
-
-    const request : CreateProposalRequest = {
-      action_type: ProposalActionType.ExternalFunctionCall,
-      params: {
-        receiver_id: 'by6od-j4aaa-aaaaa-qaadq-cai',
-        method_name: 'deposit_message',
-        args: JSON.stringify({
-          message : 'Hello World'
-        }),
-        deposit: '0',
-      },
-    }
-
-    const result :ResponseData<CreateProposalResponse> = await new LogicApiDataSource().createProposal(request);
+  async function approveProposal(proposalId: string) {
+    const request: ApproveProposalRequest = { proposal_id: proposalId };
+    const result: ResponseData<ApproveProposalResponse> =
+      await new LogicApiDataSource().approveProposal(request);
     if (result?.error) {
-      console.error('Error:', result.error);
+      console.error("Error:", result.error);
       window.alert(`${result.error.message}`);
       return;
     }
-
-    if (result?.data) {
-      window.alert(`Proposal created successfully`);
-    } else {
-      throw new Error('Invalid response from server');
-    }
-
-    setShowProgress(false);
-  };
-
-
-  const handleWithdraw = async (steps: string[]) => {
-    setProgressSteps(steps);
-    setShowProgress(true);
-
-    const request : CreateProposalRequest = {
-      action_type: ProposalActionType.ExternalFunctionCall,
-      params: {
-        receiver_id: 'by6od-j4aaa-aaaaa-qaadq-cai',
-        method_name: 'withdraw_message',
-        args: JSON.stringify({
-          note : 'Hello World'
-        }),
-        deposit: '0',
-      },
-    }
-
-    const result :ResponseData<CreateProposalResponse> = await new LogicApiDataSource().createProposal(request);
-    if (result?.error) {
-      console.error('Error:', result.error);
-      window.alert(`${result.error.message}`);
-      return;
-    }
-
-    if (result?.data) {
-      window.alert(`Proposal created successfully`);
-    } else {
-      throw new Error('Invalid response from server');
-    }
-
-    setShowProgress(false);
+    window.alert(`Proposal approved successfully`);
   }
 
+  async function sendProposalMessage(proposalId: string, text: string) {
+    const request: SendProposalMessageRequest = {
+      proposal_id: proposalId,
+      message: {
+        id: `${Date.now()}`,
+        proposal_id: proposalId,
+        author: getJWTObject()?.executor_public_key,
+        text,
+        created_at: new Date().toISOString(),
+      },
+    };
 
-  const handleOperationComplete = () => {
-    setTimeout(() => setShowProgress(false), 1500 * progressSteps.length);
+    await new LogicApiDataSource().sendProposalMessage(request);
+  }
+
+  async function handleAction(methodName: string, args: object) {
+    setShowProgress(true);
+    const request: CreateProposalRequest = {
+      action_type: ProposalActionType.ExternalFunctionCall,
+      params: {
+        receiver_id: "by6od-j4aaa-aaaaa-qaadq-cai",
+        method_name : methodName,
+        args: JSON.stringify(args),
+        deposit: "0",
+      },
+    };
+
+    console.log('Creating proposal with request:', request);
+    const result: ResponseData<CreateProposalResponse> =
+      await new LogicApiDataSource().createProposal(request);
+    if (result?.error) {
+      console.error("Error:", result.error);
+      window.alert(`${result.error.message}`);
+      return;
+    }
+    if (result?.data ) {
+      console.log('Proposal created:', result.data);
+      window.alert(`Proposal created successfully: ${result.data}`);
+      await approveProposal(result.data.proposal_id);
+      await sendProposalMessage(result.data.proposal_id, "Proposal approved and executed successfully");
+    }
+  }
+
+  const handleDeposit = async (message: string) => {
+    await CaliSec_backend.deposit_message(message).then((result) => {
+      console.log("Deposit result: ", result);
+      if (result) {
+        window.alert(`Deposit successful: ${result.Ok}`);
+      } else {
+        window.alert(`Deposit failed`);
+      }
+    });
+
+    
+  };
+
+  const handleWithdraw = async (note: string) => {
+    CaliSec_backend.withdraw_message(note).then((result) => {
+      console.log("Withdraw result: ", result);
+      if (result) {
+        window.alert(`Withdraw successful: ${result.Ok}`);
+      } else {
+        window.alert(`Withdraw failed`);
+      }
+    });
   };
 
   return (
@@ -149,7 +152,6 @@ export default function Home() {
       <NetworkBackground />
       <div className="relative z-10">
         <Header onAboutClick={() => setShowAbout(true)} onLogout={logout} />
-
         <main className="container mx-auto px-4 py-8 max-w-2xl">
           <div className="bg-[#111111]/80 backdrop-blur-md rounded-2xl p-6 shadow-xl">
             <div className="flex mb-6 bg-[#0A0A0A] rounded-lg p-1">
@@ -174,23 +176,14 @@ export default function Home() {
                 Decode Proof
               </button>
             </div>
-
             {activeTab === "deposit" ? (
-              <Deposit
-                onDeposit={handleDeposit}
-                onComplete={handleOperationComplete}
-              />
+              <Deposit onDeposit={handleDeposit} />
             ) : (
-              <Withdraw
-                onWithdraw={handleWithdraw}
-                onComplete={handleOperationComplete}
-              />
+              <Withdraw onWithdraw={handleWithdraw} />
             )}
           </div>
         </main>
-
         <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
-        <ProgressAnimation steps={progressSteps} isActive={showProgress} />
         <Footer />
       </div>
     </div>
