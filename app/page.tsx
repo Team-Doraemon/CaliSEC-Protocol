@@ -16,9 +16,35 @@ import {
   getAccessToken,
   getAppEndpointKey,
   getRefreshToken,
+  ResponseData,
 } from "@calimero-is-near/calimero-p2p-sdk";
+
 import { clearApplicationId } from "@/utils/storage";
 import { getContextId, getStorageApplicationId } from '@/utils/node';
+import {
+  getWsSubscriptionsClient,
+  LogicApiDataSource,
+} from '../api/dataSource/LogicApiDataSource';
+import {
+  ApproveProposalRequest,
+  ApproveProposalResponse,
+  CreateProposalRequest,
+  CreateProposalResponse,
+  GetProposalMessagesRequest,
+  GetProposalMessagesResponse,
+  SendProposalMessageRequest,
+  SendProposalMessageResponse,
+  ProposalActionType,
+  ExternalFunctionCallAction,
+  TransferAction,
+} from '../api/clientApi';
+import { ContextApiDataSource } from '../api/dataSource/ContractApiDataSource';
+import {
+  ApprovalsCount,
+  ContextVariables,
+  ContractProposal,
+} from '../api/contractApi';
+
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
@@ -46,10 +72,73 @@ export default function Home() {
     router.push("/auth");
   };
 
-  const handleOperation = (steps: string[]) => {
+ 
+
+  const handleDeposit = async (steps: string[]) => {
     setProgressSteps(steps);
     setShowProgress(true);
+
+    const request : CreateProposalRequest = {
+      action_type: ProposalActionType.ExternalFunctionCall,
+      params: {
+        receiver_id: '',
+        method_name: 'deposit_message',
+        args: JSON.stringify({
+          message : 'Hello World'
+        }),
+        deposit: '0',
+      },
+    }
+
+    const result :ResponseData<CreateProposalResponse> = await new LogicApiDataSource().createProposal(request);
+    if (result?.error) {
+      console.error('Error:', result.error);
+      window.alert(`${result.error.message}`);
+      return;
+    }
+
+    if (result?.data) {
+      window.alert(`Proposal created successfully`);
+    } else {
+      throw new Error('Invalid response from server');
+    }
+
+    setShowProgress(false);
   };
+
+
+  const handleWithdraw = async (steps: string[]) => {
+    setProgressSteps(steps);
+    setShowProgress(true);
+
+    const request : CreateProposalRequest = {
+      action_type: ProposalActionType.ExternalFunctionCall,
+      params: {
+        receiver_id: '',
+        method_name: 'withdraw_message',
+        args: JSON.stringify({
+          note : 'Hello World'
+        }),
+        deposit: '0',
+      },
+    }
+
+    const result :ResponseData<CreateProposalResponse> = await new LogicApiDataSource().createProposal(request);
+    if (result?.error) {
+      console.error('Error:', result.error);
+      window.alert(`${result.error.message}`);
+      return;
+    }
+
+    if (result?.data) {
+      window.alert(`Proposal created successfully`);
+    } else {
+      throw new Error('Invalid response from server');
+    }
+
+    setShowProgress(false);
+  }
+
 
   const handleOperationComplete = () => {
     setTimeout(() => setShowProgress(false), 1500 * progressSteps.length);
@@ -88,12 +177,12 @@ export default function Home() {
 
             {activeTab === "deposit" ? (
               <Deposit
-                onDeposit={handleOperation}
+                onDeposit={handleDeposit}
                 onComplete={handleOperationComplete}
               />
             ) : (
               <Withdraw
-                onWithdraw={handleOperation}
+                onWithdraw={handleWithdraw}
                 onComplete={handleOperationComplete}
               />
             )}
