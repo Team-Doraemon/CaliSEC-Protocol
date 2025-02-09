@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Copy, Check, LightbulbIcon } from "lucide-react"
-import { verifyProof } from "@/lib/api"
 import { getRandomSuggestion } from "@/lib/utils"
 
 interface WithdrawProps {
   onWithdraw: (steps: string[]) => void
+  onInputWithdraw: (message: string) => Promise<void>; // ✅ Uses handleInputWithdraw
   onComplete: () => void
 }
 
-export default function Withdraw({ onWithdraw, onComplete }: WithdrawProps) {
+export default function Withdraw({ onWithdraw, onInputWithdraw, onComplete }: WithdrawProps) {
   const [proof, setProof] = useState("")
   const [decodedMessage, setDecodedMessage] = useState("")
   const [copied, setCopied] = useState(false)
@@ -28,11 +28,11 @@ export default function Withdraw({ onWithdraw, onComplete }: WithdrawProps) {
     ])
 
     try {
-      const result = await verifyProof(proof)
-      setDecodedMessage(result.secret)
+      await onInputWithdraw(proof); // ✅ Use actual withdraw function
+      setDecodedMessage(proof); // ✅ Set decoded message from proof
       onComplete()
     } catch (error) {
-      // Handle error
+      console.error("Withdraw error:", error);
       onComplete()
     }
   }
@@ -86,4 +86,3 @@ export default function Withdraw({ onWithdraw, onComplete }: WithdrawProps) {
     </div>
   )
 }
-

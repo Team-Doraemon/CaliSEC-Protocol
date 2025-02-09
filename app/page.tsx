@@ -8,8 +8,7 @@ import AboutModal from "@/components/about-modal";
 import ProgressAnimation from "@/components/progress-animation";
 import NetworkBackground from "@/components/network-background";
 import Footer from "@/components/footer/Footer";
-import {  createActor } from "@/declarations/CaliSec_backend";
-
+import { createActor } from "@/declarations/CaliSec_backend";
 
 import { useRouter } from "next/navigation";
 import {
@@ -23,9 +22,7 @@ import {
 
 import { clearApplicationId, getJWTObject } from "@/utils/storage";
 import { getContextId, getStorageApplicationId } from "@/utils/node";
-import {
-  LogicApiDataSource,
-} from "../api/dataSource/LogicApiDataSource";
+import { LogicApiDataSource } from "../api/dataSource/LogicApiDataSource";
 import {
   ApproveProposalRequest,
   ApproveProposalResponse,
@@ -39,7 +36,6 @@ import {
 } from "../api/clientApi";
 import { ContextApiDataSource } from "../api/dataSource/ContractApiDataSource";
 import { ContextVariables, ContractProposal } from "../api/contractApi";
-
 
 const CaliSec_backend = createActor("by6od-j4aaa-aaaaa-qaadq-cai");
 
@@ -55,17 +51,26 @@ export default function Home() {
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
 
-  useEffect(() => {
-    if (!url || !applicationId || !accessToken || !refreshToken) {
-      router.push("/auth");
-    }
-  }, [accessToken, applicationId, refreshToken, url]);
+  // useEffect(() => {
+  //   if (!url || !applicationId || !accessToken || !refreshToken) {
+  //     router.push("/auth");
+  //   }
+  // }, [accessToken, applicationId, refreshToken, url]);
 
   const logout = () => {
     clearAppEndpoint();
     clearJWT();
     clearApplicationId();
     router.push("/auth");
+  };
+
+  const handleOperation = (steps: string[]) => {
+    setProgressSteps(steps);
+    setShowProgress(true);
+  };
+
+  const handleOperationComplete = () => {
+    setTimeout(() => setShowProgress(false), 1500 * progressSteps.length);
   };
 
   async function approveProposal(proposalId: string) {
@@ -95,57 +100,74 @@ export default function Home() {
     await new LogicApiDataSource().sendProposalMessage(request);
   }
 
-  async function handleAction(methodName: string, args: object) {
-    setShowProgress(true);
-    const request: CreateProposalRequest = {
-      action_type: ProposalActionType.ExternalFunctionCall,
-      params: {
-        receiver_id: "by6od-j4aaa-aaaaa-qaadq-cai",
-        method_name : methodName,
-        args: JSON.stringify(args),
-        deposit: "0",
-      },
-    };
+  // async function handleAction(methodName: string, args: object) {
+  //   setShowProgress(true);
+  //   const request: CreateProposalRequest = {
+  //     action_type: ProposalActionType.ExternalFunctionCall,
+  //     params: {
+  //       receiver_id: "by6od-j4aaa-aaaaa-qaadq-cai",
+  //       method_name: methodName,
+  //       args: JSON.stringify(args),
+  //       deposit: "0",
+  //     },
+  //   };
 
-    console.log('Creating proposal with request:', request);
-    const result: ResponseData<CreateProposalResponse> =
-      await new LogicApiDataSource().createProposal(request);
-    if (result?.error) {
-      console.error("Error:", result.error);
-      window.alert(`${result.error.message}`);
-      return;
-    }
-    if (result?.data ) {
-      console.log('Proposal created:', result.data);
-      window.alert(`Proposal created successfully: ${result.data}`);
-      await approveProposal(result.data.proposal_id);
-      await sendProposalMessage(result.data.proposal_id, "Proposal approved and executed successfully");
-    }
-  }
+  //   console.log("Creating proposal with request:", request);
+  //   const result: ResponseData<CreateProposalResponse> =
+  //     await new LogicApiDataSource().createProposal(request);
+  //   if (result?.error) {
+  //     console.error("Error:", result.error);
+  //     window.alert(`${result.error.message}`);
+  //     return;
+  //   }
+  //   if (result?.data) {
+  //     console.log("Proposal created:", result.data);
+  //     window.alert(`Proposal created successfully: ${result.data}`);
+  //     await approveProposal(result.data.proposal_id);
+  //     await sendProposalMessage(
+  //       result.data.proposal_id,
+  //       "Proposal approved and executed successfully"
+  //     );
+  //   }
+  // }
 
-  const handleDeposit = async (message: string) => {
-    await CaliSec_backend.deposit_message(message).then((result) => {
-      console.log("Deposit result: ", result);
-      if (result) {
+  const handleInputDeposit = async (message: string) => {
+    try {
+      const result = await CaliSec_backend.deposit_message(message);
+      console.log("YEH LO JI: ",result);
+
+      if ("Ok" in result) { // ✅ Type guard check
+        console.log("Deposit successful:", result.Ok);
         window.alert(`Deposit successful: ${result.Ok}`);
-      } else {
-        window.alert(`Deposit failed`);
+      } else if ("Err" in result) {
+        console.error("Deposit error:", result.Err);
+        window.alert(`Deposit failed: ${result.Err}`);
       }
-    });
-
-    
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      window.alert("An unexpected error occurred during deposit.");
+    }
   };
+  
 
-  const handleWithdraw = async (note: string) => {
-    CaliSec_backend.withdraw_message(note).then((result) => {
-      console.log("Withdraw result: ", result);
-      if (result) {
+  const handleInputWithdraw = async (note: string) => {
+    try {
+      const result = await CaliSec_backend.withdraw_message(note);
+      console.log("YEH LO JI: ",result);
+      
+      if ("Ok" in result) { // ✅ Type guard check
+        console.log("Withdraw successful:", result.Ok);
         window.alert(`Withdraw successful: ${result.Ok}`);
-      } else {
-        window.alert(`Withdraw failed`);
+      } else if ("Err" in result) {
+        console.error("Withdraw error:", result.Err);
+        window.alert(`Withdraw failed: ${result.Err}`);
       }
-    });
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      window.alert("An unexpected error occurred during withdrawal.");
+    }
   };
+  
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -177,13 +199,22 @@ export default function Home() {
               </button>
             </div>
             {activeTab === "deposit" ? (
-              <Deposit onDeposit={handleDeposit} />
+              <Deposit
+                onDeposit={handleOperation}
+                onInputDeposit={handleInputDeposit}
+                onComplete={handleOperationComplete}
+              />
             ) : (
-              <Withdraw onWithdraw={handleWithdraw} />
+              <Withdraw
+                onWithdraw={handleOperation}
+                onInputWithdraw={handleInputWithdraw}
+                onComplete={handleOperationComplete}
+              />
             )}
           </div>
         </main>
         <AboutModal open={showAbout} onClose={() => setShowAbout(false)} />
+        <ProgressAnimation steps={progressSteps} isActive={showProgress} />
         <Footer />
       </div>
     </div>

@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Copy, Check, LightbulbIcon } from "lucide-react"
-import { createSecret } from "@/lib/api"
 import { getRandomSuggestion } from "@/lib/utils"
 
 interface DepositProps {
   onDeposit: (steps: string[]) => void
+  onInputDeposit: (message: string) => Promise<void>; // ✅ Uses handleInputDeposit
   onComplete: () => void
 }
 
-export default function Deposit({ onDeposit, onComplete }: DepositProps) {
+export default function Deposit({ onDeposit, onInputDeposit, onComplete }: DepositProps) {
   const [secret, setSecret] = useState("")
   const [generatedProof, setGeneratedProof] = useState("")
   const [copied, setCopied] = useState(false)
@@ -28,11 +28,11 @@ export default function Deposit({ onDeposit, onComplete }: DepositProps) {
     ])
 
     try {
-      const result = await createSecret(secret)
-      setGeneratedProof(result.proof)
+      await onInputDeposit(secret); // ✅ Use actual deposit function
+      setGeneratedProof(secret); // ✅ Set generated proof from message
       onComplete()
     } catch (error) {
-      // Handle error
+      console.error("Deposit error:", error);
       onComplete()
     }
   }
@@ -87,4 +87,3 @@ export default function Deposit({ onDeposit, onComplete }: DepositProps) {
     </div>
   )
 }
-
